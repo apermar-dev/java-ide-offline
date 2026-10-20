@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IntelliJ IDEA - Safe Exam Browser Edition</title>
+
+  <!-- Local CodeMirror Stylesheets (100% Offline) -->
+  <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css">
+  <link rel="stylesheet" href="vendor/codemirror/theme/darcula.min.css">
+  <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css">
+  <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css">
+
+  <!-- Custom IntelliJ Darcula UI Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ide-container">
+    <!-- Top Application Header & Toolbar -->
+    <header class="ide-header">
+      <div class="header-left">
+        <div class="ide-logo" title="IntelliJ IDEA for Safe Exam Browser">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="6" fill="#000000"/>
+            <path d="M4 23.5L10 28H28V4L4 10.5V23.5Z" fill="url(#paint0_linear)"/>
+            <path d="M7 7H13V9H10V18H7V7Z" fill="white"/>
+            <path d="M14 18V7H17V15H21V18H14Z" fill="white"/>
+            <rect x="7" y="21" width="14" height="2" fill="#3592C4"/>
+            <defs>
+              <linearGradient id="paint0_linear" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#FC7B1E"/>
+                <stop offset="0.5" stop-color="#EE2B59"/>
+                <stop offset="1" stop-color="#7B1FA2"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span>IntelliJ IDEA</span>
+        </div>
+
+        <nav class="breadcrumbs" aria-label="Breadcrumbs">
+          <span>📁 Project</span>
+          <span class="sep">›</span>
+          <span>📂 src</span>
+          <span class="sep">›</span>
+          <span class="bc-active" id="breadcrumb-filename">Main.java</span>
+        </nav>
+      </div>
+
+      <div class="header-center">
+        <span id="backend-status-badge" class="status-badge badge-offline">🔵 100% Offline (SEB)</span>
+        <span id="autosave-status" class="autosave-indicator">💾 Guardado localmente</span>
+      </div>
+
+      <div class="header-right">
+        <button id="btn-compile" class="btn btn-compile" title="Analizar y verificar sintaxis Java (F9)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+          <span>Compilar / Analizar</span>
+        </button>
+
+        <button id="btn-run" class="btn btn-run" title="Ejecutar código (Shift+F10)">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span>Ejecutar</span>
+        </button>
+
+        <button id="btn-download" class="btn btn-download" title="Descargar archivo .java con nombre de clase (Ctrl+S)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Descargar .java</span>
+        </button>
+
+        <button id="btn-format" class="btn btn-secondary btn-icon-only" title="Formatear código y sangría (Ctrl+Alt+L)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="21" y1="10" x2="7" y2="10"/>
+            <line x1="21" y1="6" x2="3" y2="6"/>
+            <line x1="21" y1="14" x2="3" y2="14"/>
+            <line x1="21" y1="18" x2="7" y2="18"/>
+          </svg>
+        </button>
+
+        <button id="btn-font-dec" class="btn btn-secondary btn-icon-only" title="Reducir tamaño de fuente">A-</button>
+        <button id="btn-font-inc" class="btn btn-secondary btn-icon-only" title="Aumentar tamaño de fuente">A+</button>
+      </div>
+    </header>
+
+    <!-- Main IDE Workspace -->
+    <div class="ide-workspace">
+      <!-- Collapsible Left Sidebar (Project Structure) -->
+      <aside id="project-sidebar" class="ide-sidebar">
+        <div class="sidebar-header">
+          <span>Project</span>
+          <button id="btn-toggle-sidebar" class="sidebar-toggle-btn" title="Ocultar / Mostrar árbol de proyecto">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+        </div>
+        <div class="project-tree">
+          <div class="tree-node selected">
+            <span class="tree-icon">📦</span>
+            <span>ExamProject</span>
+          </div>
+          <div class="tree-node level-1">
+            <span class="tree-icon">📂</span>
+            <span>src</span>
+          </div>
+          <div class="tree-node level-2 selected">
+            <span class="tree-icon">☕</span>
+            <span id="tree-filename">Main.java</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Editor & Bottom Panels Area -->
+      <section class="ide-editor-area">
+        <!-- Editor Tabs Bar -->
+        <div class="editor-tabs-bar">
+          <div class="tabs-list">
+            <div class="editor-tab active">
+              <span>☕</span>
+              <span id="tab-filename">Main.java</span>
+              <span id="tab-modified-dot" class="tab-modified-dot"></span>
+            </div>
+          </div>
+          <div class="tabs-actions">
+            <button id="btn-new" class="tab-action-btn" title="Reiniciar con una plantilla limpia">+ Nueva Plantilla</button>
+            <button id="btn-reset" class="tab-action-btn" title="Restaurar código por defecto">Restablecer</button>
+          </div>
+        </div>
+
+        <!-- CodeMirror Editor Mount Point -->
+        <div id="code-editor" class="editor-wrapper"></div>
+
+        <!-- Draggable Resizer Bar -->
+        <div id="panel-resizer" class="resizer-horizontal" title="Arrastra para cambiar el tamaño del panel"></div>
+
+        <!-- Bottom Tool Window (Problems / Terminal / Snippets) -->
+        <footer id="bottom-panel" class="ide-bottom-panel">
+          <div class="bottom-panel-header">
+            <div class="panel-tabs">
+              <div class="panel-tab active" data-tab="problems">
+                <span>Problems</span>
+                <span id="problems-count" class="badge-count">0</span>
+              </div>
+              <div class="panel-tab" data-tab="output">
+                <span>Terminal / Salida</span>
+              </div>
+              <div class="panel-tab" data-tab="snippets">
+                <span>Atajos & Snippets</span>
+              </div>
+            </div>
+            <div class="panel-actions">
+              <button id="btn-clear-console" class="panel-action-btn" title="Limpiar salida de consola">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+              <button id="btn-toggle-panel" class="panel-action-btn" title="Minimizar / Restaurar panel">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab Content Views -->
+          <div class="panel-content-area">
+            <!-- 1. Problems View -->
+            <div id="problems-view" class="panel-view active">
+              <div id="problems-empty" class="problems-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <div>No se han detectado errores sintácticos. El código parece válido.</div>
+              </div>
+              <div id="problems-list" class="problems-list"></div>
+            </div>
+
+            <!-- 2. Terminal Console View -->
+            <div id="output-view" class="panel-view">
+              <pre id="console-output" class="console-output"><span class="out-system">=== Consola de Salida IntelliJ IDEA (SEB Edition) ===
+Pulsa "Compilar / Analizar" (F9) para verificar tu código.
+Pulsa "Descargar .java" (Ctrl+S) para guardar tu fichero listo para entrega.</span></pre>
+            </div>
+
+            <!-- 3. Snippets & Help View -->
+            <div id="snippets-view" class="panel-view">
+              <table class="snippets-table">
+                <thead>
+                  <tr>
+                    <th>Snippet / Atajo</th>
+                    <th>Acción</th>
+                    <th>Resultado / Expansión</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="kbd">psvm</span> + <span class="kbd">Tab</span></td>
+                    <td>Generar método main</td>
+                    <td><code>public static void main(String[] args) { ... }</code></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">sout</span> + <span class="kbd">Tab</span></td>
+                    <td>Imprimir en consola</td>
+                    <td><code>System.out.println();</code></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">serr</span> + <span class="kbd">Tab</span></td>
+                    <td>Imprimir en error</td>
+                    <td><code>System.err.println();</code></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">fori</span> + <span class="kbd">Tab</span></td>
+                    <td>Bucle for indexado</td>
+                    <td><code>for (int i = 0; i &lt; ...; i++) { ... }</code></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">ifelse</span> + <span class="kbd">Tab</span></td>
+                    <td>Bloque if-else</td>
+                    <td><code>if (...) { ... } else { ... }</code></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">trycatch</span> + <span class="kbd">Tab</span></td>
+                    <td>Manejo de excepciones</td>
+                    <td><code>try { ... } catch (Exception e) { ... }</code></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">scanner</span> + <span class="kbd">Tab</span></td>
+                    <td>Inicializar Scanner</td>
+                    <td><code>Scanner scanner = new Scanner(System.in);</code></td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">Ctrl</span> + <span class="kbd">Space</span></td>
+                    <td>Autocompletado</td>
+                    <td>Muestra lista de palabras clave, clases y métodos comunes</td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">Ctrl</span> + <span class="kbd">Alt</span> + <span class="kbd">L</span></td>
+                    <td>Formateo automático</td>
+                    <td>Ajusta la sangría e identación (4 espacios)</td>
+                  </tr>
+                  <tr>
+                    <td><span class="kbd">Ctrl</span> + <span class="kbd">S</span></td>
+                    <td>Descargar archivo</td>
+                    <td>Descarga automáticamente como <code>&lt;NombreClase&gt;.java</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </footer>
+      </section>
+    </div>
+
+    <!-- Status Bar (IntelliJ Style) -->
+    <footer class="ide-statusbar">
+      <div class="statusbar-left">
+        <span id="statusbar-message" class="statusbar-message">Listo</span>
+      </div>
+      <div class="statusbar-right">
+        <div id="statusbar-cursor" class="statusbar-item">Ln 1, Col 1</div>
+        <div class="statusbar-item">4 spaces</div>
+        <div class="statusbar-item">UTF-8</div>
+        <div class="statusbar-item">Java SE 17+ (SEB Offline)</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Local CodeMirror Libraries (100% Offline) -->
+  <script src="vendor/codemirror/codemirror.min.js"></script>
+  <script src="vendor/codemirror/mode/clike.min.js"></script>
+  <script src="vendor/codemirror/addon/edit/matchbrackets.min.js"></script>
+  <script src="vendor/codemirror/addon/edit/closebrackets.min.js"></script>
+  <script src="vendor/codemirror/addon/hint/show-hint.min.js"></script>
+  <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
+  <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
+  <script src="vendor/codemirror/addon/fold/brace-fold.min.js"></script>
+  <script src="vendor/codemirror/addon/fold/comment-fold.min.js"></script>
+  <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

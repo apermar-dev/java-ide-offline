@@ -1,0 +1,22 @@
+# Local notes and agent context (never commit context.md)
+context.md
+*.tmp
+*.log
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Java / Compilation artifacts
+*.class
+*.jar
+*.war
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE / Editor local state
+.idea/
+.vscode/

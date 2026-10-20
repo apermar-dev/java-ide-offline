@@ -1,0 +1,938 @@
+/* ==========================================================================
+   IntelliJ IDEA Darcula Theme & Custom UI Stylesheet
+   Designed for Offline Safe Exam Browser (SEB)
+   ========================================================================== */
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('vendor/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('vendor/fonts/jetbrains-mono-700.woff2') format('woff2');
+}
+
+:root {
+  --darcula-bg: #2B2B2B;
+  --darcula-header: #3C3F41;
+  --darcula-toolwindow: #313335;
+  --darcula-border: #323232;
+  --darcula-active-tab: #2B2B2B;
+  --darcula-inactive-tab: #353739;
+  --darcula-tab-border: #4E5254;
+  --darcula-text: #A9B7C6;
+  --darcula-text-muted: #787878;
+  --darcula-text-bright: #E0E0E0;
+  --darcula-selection: #214283;
+  --darcula-accent: #4A88C7;
+  --darcula-accent-hover: #5B9BD5;
+  --darcula-green: #499C54;
+  --darcula-green-hover: #57B264;
+  --darcula-red: #E74C3C;
+  --darcula-yellow: #D19A66;
+  --darcula-line-number: #606366;
+  --darcula-current-line: #323232;
+  --darcula-scrollbar: #4B4D4D;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--darcula-bg);
+  color: var(--darcula-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  user-select: none;
+}
+
+/* App Container */
+.ide-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ==========================================================================
+   Header Toolbar (IntelliJ Style)
+   ========================================================================== */
+.ide-header {
+  height: 42px;
+  background-color: var(--darcula-header);
+  border-bottom: 1px solid var(--darcula-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ide-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--darcula-text-bright);
+  letter-spacing: 0.5px;
+}
+
+.ide-logo svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--darcula-text-muted);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #43454a;
+}
+
+.breadcrumbs .bc-active {
+  color: var(--darcula-text-bright);
+  font-weight: 600;
+}
+
+.breadcrumbs .sep {
+  opacity: 0.5;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.badge-offline {
+  background: rgba(74, 136, 199, 0.2);
+  color: #72a9e6;
+  border: 1px solid rgba(74, 136, 199, 0.4);
+}
+
+.badge-online {
+  background: rgba(73, 156, 84, 0.2);
+  color: #79d486;
+  border: 1px solid rgba(73, 156, 84, 0.4);
+}
+
+.autosave-indicator {
+  font-size: 11px;
+  color: var(--darcula-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Toolbar Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+  font-family: inherit;
+  color: var(--darcula-text-bright);
+}
+
+.btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-secondary {
+  background-color: #4C5052;
+  border-color: #5C6164;
+  color: #DFE1E5;
+}
+
+.btn-secondary:hover {
+  background-color: #575B5D;
+  border-color: #6C7276;
+}
+
+.btn-secondary:active {
+  background-color: #404446;
+}
+
+.btn-compile {
+  background-color: #365880;
+  border-color: #436E9E;
+  color: #FFFFFF;
+}
+
+.btn-compile:hover {
+  background-color: #3F6797;
+  border-color: #5286C1;
+}
+
+.btn-run {
+  background-color: var(--darcula-green);
+  border-color: #58B464;
+  color: #FFFFFF;
+}
+
+.btn-run:hover {
+  background-color: var(--darcula-green-hover);
+  border-color: #6CD27A;
+}
+
+.btn-download {
+  background-color: #3D4B3D;
+  border-color: #4D644D;
+  color: #A3D9A5;
+}
+
+.btn-download:hover {
+  background-color: #475847;
+  color: #BCF0BF;
+}
+
+.btn-icon-only {
+  padding: 5px 8px;
+}
+
+/* ==========================================================================
+   Main Workspace Layout
+   ========================================================================== */
+.ide-workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Left Sidebar: Project Tree */
+.ide-sidebar {
+  width: 210px;
+  background-color: var(--darcula-toolwindow);
+  border-right: 1px solid var(--darcula-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.2s ease;
+}
+
+.ide-sidebar.collapsed {
+  width: 32px;
+}
+
+.sidebar-header {
+  height: 28px;
+  background-color: var(--darcula-header);
+  border-bottom: 1px solid var(--darcula-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--darcula-text-muted);
+}
+
+.ide-sidebar.collapsed .sidebar-header span,
+.ide-sidebar.collapsed .project-tree {
+  display: none;
+}
+
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--darcula-text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--darcula-text-bright);
+}
+
+.project-tree {
+  padding: 8px 4px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--darcula-text);
+  white-space: nowrap;
+}
+
+.tree-node:hover {
+  background-color: #393C3E;
+}
+
+.tree-node.selected {
+  background-color: #2F3E4D;
+  color: #FFFFFF;
+}
+
+.tree-node.level-1 {
+  padding-left: 12px;
+}
+
+.tree-node.level-2 {
+  padding-left: 24px;
+}
+
+.tree-icon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+/* Main Editor Area */
+.ide-editor-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background-color: var(--darcula-bg);
+}
+
+/* Editor Tabs */
+.editor-tabs-bar {
+  height: 30px;
+  background-color: var(--darcula-toolwindow);
+  border-bottom: 1px solid var(--darcula-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.tabs-list {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  gap: 2px;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  height: 29px;
+  background-color: var(--darcula-inactive-tab);
+  border-top: 2px solid transparent;
+  color: var(--darcula-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px 3px 0 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.editor-tab.active {
+  background-color: var(--darcula-active-tab);
+  border-top: 2px solid var(--darcula-accent);
+  color: var(--darcula-text-bright);
+  font-weight: 500;
+}
+
+.editor-tab:hover:not(.active) {
+  background-color: #3E4143;
+  color: var(--darcula-text);
+}
+
+.tab-modified-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--darcula-accent);
+  border-radius: 50%;
+  display: none;
+}
+
+.tab-modified-dot.visible {
+  display: inline-block;
+}
+
+.tabs-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab-action-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--darcula-text-muted);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.tab-action-btn:hover {
+  background-color: #3C3F41;
+  border-color: #4C5052;
+  color: var(--darcula-text-bright);
+}
+
+/* CodeMirror Container */
+.editor-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.CodeMirror {
+  height: 100% !important;
+  font-family: var(--font-mono) !important;
+  font-size: 14px;
+  line-height: 1.6;
+  background-color: var(--darcula-bg) !important;
+  color: var(--darcula-text) !important;
+}
+
+/* Custom Gutter & Line Numbers */
+.CodeMirror-gutters {
+  background-color: var(--darcula-toolwindow) !important;
+  border-right: 1px solid var(--darcula-border) !important;
+  white-space: nowrap;
+}
+
+.CodeMirror-linenumber {
+  color: var(--darcula-line-number) !important;
+  padding: 0 5px 0 8px !important;
+}
+
+.CodeMirror-activeline-background {
+  background-color: var(--darcula-current-line) !important;
+}
+
+.CodeMirror-activeline .CodeMirror-linenumber {
+  color: #A4A3A3 !important;
+}
+
+.CodeMirror-selected {
+  background-color: var(--darcula-selection) !important;
+}
+
+.CodeMirror-cursor {
+  border-left: 2px solid #BBBBBB !important;
+}
+
+.CodeMirror-matchingbracket {
+  background-color: #3B514D !important;
+  border-bottom: 1px solid #578680 !important;
+  color: #FFEFBF !important;
+}
+
+.CodeMirror-nonmatchingbracket {
+  background-color: #803D3D !important;
+  border-bottom: 1px solid #C44 !important;
+  color: #FFAAAA !important;
+}
+
+/* Error Markers & Squiggly lines */
+.cm-lint-error-line {
+  background-color: rgba(231, 76, 60, 0.15) !important;
+}
+
+.cm-lint-error-text {
+  text-decoration: underline wavy var(--darcula-red);
+  text-decoration-skip-ink: none;
+}
+
+.cm-lint-gutter-marker {
+  width: 14px;
+  text-align: center;
+  color: var(--darcula-red);
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.cm-lint-gutter-marker.warning {
+  color: var(--darcula-yellow);
+}
+
+/* Code Folding Gutter */
+.CodeMirror-foldgutter-open:after {
+  content: "▼";
+  font-size: 9px;
+  color: #727476;
+}
+
+.CodeMirror-foldgutter-folded:after {
+  content: "▶";
+  font-size: 9px;
+  color: #A9B7C6;
+}
+
+/* ==========================================================================
+   Bottom Tool Window (IntelliJ Problems / Terminal / Build Dock)
+   ========================================================================== */
+.resizer-horizontal {
+  height: 5px;
+  background-color: var(--darcula-border);
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+}
+
+.resizer-horizontal:hover {
+  background-color: var(--darcula-accent);
+}
+
+.ide-bottom-panel {
+  height: 220px;
+  min-height: 32px;
+  max-height: 80vh;
+  background-color: var(--darcula-toolwindow);
+  border-top: 1px solid var(--darcula-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.bottom-panel-header {
+  height: 30px;
+  background-color: var(--darcula-header);
+  border-bottom: 1px solid var(--darcula-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+.panel-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+}
+
+.panel-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 29px;
+  padding: 0 12px;
+  color: var(--darcula-text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  border-top: 2px solid transparent;
+}
+
+.panel-tab:hover {
+  color: var(--darcula-text-bright);
+}
+
+.panel-tab.active {
+  color: var(--darcula-text-bright);
+  background-color: var(--darcula-toolwindow);
+  border-top: 2px solid var(--darcula-accent);
+}
+
+.badge-count {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #4C5052;
+  color: #FFF;
+}
+
+.badge-count.has-errors {
+  background: var(--darcula-red);
+}
+
+.badge-count.has-warnings {
+  background: var(--darcula-yellow);
+  color: #222;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-action-btn {
+  background: none;
+  border: none;
+  color: var(--darcula-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-action-btn:hover {
+  background-color: #4C5052;
+  color: var(--darcula-text-bright);
+}
+
+.panel-content-area {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background-color: #242424;
+}
+
+.panel-view {
+  width: 100%;
+  height: 100%;
+  display: none;
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.panel-view.active {
+  display: block;
+}
+
+/* Problems List View */
+.problems-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.problem-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  background-color: #2B2B2B;
+  border-radius: 4px;
+  border-left: 3px solid var(--darcula-red);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.problem-item:hover {
+  background-color: #333638;
+}
+
+.problem-item.warning {
+  border-left-color: var(--darcula-yellow);
+}
+
+.problem-item.info {
+  border-left-color: var(--darcula-accent);
+}
+
+.problem-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.problem-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.problem-title {
+  color: var(--darcula-text-bright);
+  font-weight: 500;
+}
+
+.problem-location {
+  color: var(--darcula-text-muted);
+  font-size: 11px;
+}
+
+.problems-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #79d486;
+  gap: 8px;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+.problems-empty svg {
+  width: 32px;
+  height: 32px;
+  stroke: #79d486;
+}
+
+/* Terminal Console View */
+.console-output {
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #CCCCCC;
+  font-size: 12px;
+}
+
+.console-output .out-stdout {
+  color: #A9B7C6;
+}
+
+.console-output .out-stderr {
+  color: #FF6B68;
+}
+
+.console-output .out-system {
+  color: #72a9e6;
+  font-weight: bold;
+}
+
+.console-output .out-success {
+  color: #79d486;
+  font-weight: bold;
+}
+
+/* Snippets & Help Table */
+.snippets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--darcula-text);
+}
+
+.snippets-table th {
+  text-align: left;
+  background-color: #2F3133;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--darcula-border);
+  color: var(--darcula-text-bright);
+}
+
+.snippets-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #2D2D2D;
+}
+
+.snippets-table tr:hover td {
+  background-color: #2E3032;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: #3C3F41;
+  border: 1px solid #555;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #E6E6E6;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+
+/* ==========================================================================
+   Status Bar (IntelliJ Style)
+   ========================================================================== */
+.ide-statusbar {
+  height: 24px;
+  background-color: var(--darcula-header);
+  border-top: 1px solid var(--darcula-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--darcula-text-muted);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.statusbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusbar-message {
+  color: var(--darcula-text-bright);
+}
+
+.statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+}
+
+/* ==========================================================================
+   CodeMirror Autocomplete (Show-Hint Darcula Enhancements)
+   ========================================================================== */
+.CodeMirror-hints {
+  background-color: #3C3F41 !important;
+  border: 1px solid #515658 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  padding: 4px 0 !important;
+  max-height: 220px !important;
+  z-index: 9999 !important;
+}
+
+.CodeMirror-hint {
+  color: #DFE1E5 !important;
+  padding: 3px 10px !important;
+  border-radius: 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+li.CodeMirror-hint-active {
+  background-color: #2F3E4D !important;
+  color: #FFFFFF !important;
+}
+
+.hint-type-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 8px;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.hint-badge-snippet { background: #355E3B; color: #8FDF8F; }
+.hint-badge-keyword { background: #554422; color: #FFC66D; }
+.hint-badge-class { background: #3D4450; color: #82AAFF; }
+.hint-badge-method { background: #4D3D50; color: #FF9CAC; }
+
+/* Modal Notifications */
+.toast-notification {
+  position: fixed;
+  bottom: 35px;
+  right: 20px;
+  background-color: #323232;
+  border: 1px solid #4C5052;
+  color: #FFF;
+  padding: 10px 16px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  animation: slideIn 0.25s ease-out;
+}
+
+.toast-notification.success {
+  border-left: 4px solid var(--darcula-green);
+}
+
+.toast-notification.error {
+  border-left: 4px solid var(--darcula-red);
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Custom Scrollbar for Darcula */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2B2B2B;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--darcula-scrollbar);
+  border-radius: 5px;
+  border: 2px solid #2B2B2B;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5E6060;
+}
