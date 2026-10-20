@@ -172,14 +172,18 @@ class IdeRequestHandler(http.server.SimpleHTTPRequestHandler):
             files_dict = data.get('files')
 
             if files_dict and isinstance(files_dict, dict):
-                # Buscar archivo que declare 'public static void main'
-                found_main = None
-                for fname, fcode in files_dict.items():
-                    if 'public static void main' in fcode:
-                        found_main = fname.replace('.java', '')
-                        break
-                if found_main:
-                    target_class = found_main
+                active_file = f"{target_class}.java"
+                if active_file in files_dict and 'public static void main' in files_dict[active_file]:
+                    # La clase seleccionada actualmente tiene main(), ejecutarla preferentemente
+                    pass
+                else:
+                    found_main = None
+                    for fname, fcode in files_dict.items():
+                        if 'public static void main' in fcode:
+                            found_main = fname.replace('.java', '')
+                            break
+                    if found_main:
+                        target_class = found_main
 
             if not target_class or not target_class.isidentifier():
                 target_class = 'Main'

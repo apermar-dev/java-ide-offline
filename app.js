@@ -9,20 +9,255 @@
 (function () {
   'use strict';
 
-  // --- Initial Default Templates ---
-  const DEFAULT_MAIN_TEMPLATE = `import java.util.Scanner;
+  // --- Initial Default Templates (PSPRO - 3 Ejercicios) ---
+  const PSPRO_INIT_KEY = 'java_offline_pspro_v3_setup';
 
-public class Main {
+  const EJERCICIO_1_TEMPLATE = `import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+
+/**
+ * =========================================================================
+ * EJERCICIO 1 (PSPRO - Unidad 2: Creación y Control de Subprocesos)
+ * =========================================================================
+ * OBJETIVO:
+ * Lanzar un subproceso del sistema operativo mediante ProcessBuilder,
+ * capturar su salida estándar línea a línea y controlar su código de retorno.
+ *
+ * REQUISITOS:
+ * 1. Configura un comando del sistema (ej: "pwd" o "ls -la" en Linux/macOS, "dir" en Windows).
+ * 2. Inicia el subproceso con start() y muestra su PID con process.pid().
+ * 3. Lee con BufferedReader todo el flujo de salida y muéstralo por pantalla.
+ * 4. Espera su terminación con waitFor() y verifica si el exit code fue 0.
+ * =========================================================================
+ */
+public class Ejercicio1 {
     public static void main(String[] args) {
-        // Bienvenido al editor offline estilo IntelliJ IDEA para Safe Exam Browser
-        // Snippets disponibles: escribe 'sout' o 'psvm' y pulsa Tab
-        System.out.println("¡Hola desde el entorno de examen!");
+        System.out.println("=== PSPRO: Ejercicio 1 - ProcessBuilder y ProcessHandle ===");
 
-        Scanner scanner = new Scanner(System.in);
-        // Escribe tu solución aquí...
+        // Detectar si el sistema operativo es Windows o Unix/Linux/macOS
+        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+        String[] comando = isWindows 
+            ? new String[]{"cmd.exe", "/c", "dir"} 
+            : new String[]{"pwd"};
+
+        System.out.println("Comando configurado: " + String.join(" ", comando));
+
+        try {
+            // 1. Crear el constructor del proceso
+            ProcessBuilder pb = new ProcessBuilder(comando);
+
+            // 2. Iniciar el subproceso
+            Process subproceso = pb.start();
+            long pid = subproceso.pid(); // API ProcessHandle (Java 9+)
+            System.out.println("[INFO] Subproceso lanzado con PID: " + pid);
+
+            // 3. Capturar y leer la salida estándar del subproceso
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(subproceso.getInputStream()))) {
+                String linea;
+                System.out.println("\n--- SALIDA DEL SUBPROCESO ---");
+                while ((linea = reader.readLine()) != null) {
+                    System.out.println(">> " + linea);
+                }
+            }
+
+            // 4. Esperar la finalización del subproceso
+            int exitCode = subproceso.waitFor();
+            System.out.println("-----------------------------");
+            System.out.println("[FIN] El subproceso finalizó con código: " + exitCode);
+
+            if (exitCode == 0) {
+                System.out.println("✔ Subproceso ejecutado con éxito.");
+            } else {
+                System.err.println("❌ El subproceso terminó con errores.");
+            }
+
+        } catch (IOException e) {
+            System.err.println("Error de E/S al lanzar el subproceso: " + e.getMessage());
+        } catch (InterruptedException e) {
+            System.err.println("El subproceso fue interrumpido: " + e.getMessage());
+            Thread.currentThread().interrupt();
+        }
     }
 }
 `;
+
+  const EJERCICIO_2_CODE = `/**
+ * =========================================================================
+ * EJERCICIO 2 (PSPRO - Unidad 3 y 4: Concurrencia, Hilos y Sincronización)
+ * =========================================================================
+ * OBJETIVO:
+ * Simular el acceso concurrente de múltiples cajeros a una cuenta bancaria
+ * compartida. Proteger la sección crítica con el modificador 'synchronized'
+ * para evitar condiciones de carrera (Race Conditions).
+ *
+ * REQUISITOS:
+ * 1. Crea una clase CuentaBancaria con método sincronizado 'ingresar(int cantidad)'.
+ * 2. Lanza 5 hilos trabajadores (Cajeros) que hagan 1000 ingresos de 1€ cada uno.
+ * 3. Usa join() en el hilo principal para esperar a que todos los cajeros terminen.
+ * 4. Comprueba que el saldo final sea exactamente 5000€.
+ * =========================================================================
+ */
+public class Ejercicio2 {
+
+    // Recurso compartido con sección crítica sincronizada
+    static class CuentaBancaria {
+        private int saldo = 0;
+
+        // Método sincronizado para proteger el acceso concurrente
+        public synchronized void ingresar(int cantidad) {
+            // Sección crítica protegida con cerrojo intrínseco
+            this.saldo += cantidad;
+        }
+
+        public int getSaldo() {
+            return saldo;
+        }
+    }
+
+    // Tarea concurrente ejecutada por cada hilo
+    static class Cajero implements Runnable {
+        private final CuentaBancaria cuenta;
+        private final String nombre;
+
+        public Cajero(CuentaBancaria cuenta, String nombre) {
+            this.cuenta = cuenta;
+            this.nombre = nombre;
+        }
+
+        @Override
+        public void run() {
+            for (int i = 0; i < 1000; i++) {
+                cuenta.ingresar(1);
+            }
+            System.out.println("[OK] " + nombre + " completó sus 1000 operaciones.");
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("=== PSPRO: Ejercicio 2 - Hilos y Bloques Sincronizados ===");
+
+        CuentaBancaria cuentaCompartida = new CuentaBancaria();
+        int NUM_CAJEROS = 5;
+        Thread[] hilos = new Thread[NUM_CAJEROS];
+
+        // 1. Crear y arrancar los hilos concurrentes
+        for (int i = 0; i < NUM_CAJEROS; i++) {
+            hilos[i] = new Thread(new Cajero(cuentaCompartida, "Cajero-" + (i + 1)));
+            hilos[i].start();
+        }
+
+        // 2. Esperar a que todos los hilos finalicen usando join()
+        try {
+            for (int i = 0; i < NUM_CAJEROS; i++) {
+                hilos[i].join();
+            }
+        } catch (InterruptedException e) {
+            System.err.println("Hilo principal interrumpido: " + e.getMessage());
+            Thread.currentThread().interrupt();
+        }
+
+        // 3. Verificación de exclusión mutua
+        int saldoFinal = cuentaCompartida.getSaldo();
+        int saldoEsperado = NUM_CAJEROS * 1000;
+        System.out.println("\n-------------------------------------------");
+        System.out.println("Saldo final obtenido : " + saldoFinal + " €");
+        System.out.println("Saldo final esperado : " + saldoEsperado + " €");
+
+        if (saldoFinal == saldoEsperado) {
+            System.out.println("✔ EXCELENTE: Sección crítica protegida con synchronized. Cero condiciones de carrera.");
+        } else {
+            System.err.println("❌ ERROR: Condición de carrera detectada. Falta sincronización.");
+        }
+    }
+}
+`;
+
+  const EJERCICIO_3_CODE = `import java.util.concurrent.Semaphore;
+import java.util.Random;
+
+/**
+ * =========================================================================
+ * EJERCICIO 3 (PSPRO - Unidad 4: Control de Concurrencia con Semáforos)
+ * =========================================================================
+ * OBJETIVO:
+ * Gestionar el acceso a un recurso limitado (un túnel de lavado con solo 2
+ * plazas disponibles para 6 vehículos) utilizando un Semáforo de Dijkstra (Semaphore).
+ *
+ * REQUISITOS:
+ * 1. Crea un Semaphore con 2 permisos y política equitativa FIFO (fairness = true).
+ * 2. Lanza 6 hilos concurrentes representando vehículos.
+ * 3. Cada vehículo debe solicitar permiso con acquire() antes de entrar a lavar.
+ * 4. Simula la duración del lavado con Thread.sleep(...).
+ * 5. Libera el permiso en un bloque finally con release() para evitar bloqueos permanentes.
+ * =========================================================================
+ */
+public class Ejercicio3 {
+
+    static class TunelLavado {
+        // Semáforo con 2 plazas disponibles y política equitativa FIFO (fairness = true)
+        private final Semaphore plazas = new Semaphore(2, true);
+        private final Random random = new Random();
+
+        public void lavarVehiculo(String vehiculoId) {
+            System.out.println("🚗 " + vehiculoId + " llega y ESPERA plaza... (Libres: " + plazas.availablePermits() + ")");
+            try {
+                // Adquirir un permiso (bloqueante si no hay permisos disponibles)
+                plazas.acquire();
+
+                System.out.println("  ✨ [ENTRA] " + vehiculoId + " a lavar. Plazas restantes: " + plazas.availablePermits());
+
+                // Simular tiempo de lavado (entre 300 y 700 ms)
+                int duracion = 300 + random.nextInt(400);
+                Thread.sleep(duracion);
+
+                System.out.println("  ✅ [TERMINA] " + vehiculoId + " lavado en " + duracion + " ms.");
+
+            } catch (InterruptedException e) {
+                System.err.println(vehiculoId + " fue interrumpido.");
+                Thread.currentThread().interrupt();
+            } finally {
+                // MUY IMPORTANTE EN PSPRO: Liberar siempre en bloque finally
+                plazas.release();
+                System.out.println("  🚪 [SALE] " + vehiculoId + " sale. Plazas disponibles: " + plazas.availablePermits());
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("=== PSPRO: Ejercicio 3 - Exclusión Mutua Múltiple (Semaphore) ===");
+
+        TunelLavado lavadero = new TunelLavado();
+        int TOTAL_COCHES = 6;
+        Thread[] coches = new Thread[TOTAL_COCHES];
+
+        for (int i = 0; i < TOTAL_COCHES; i++) {
+            final String matricula = "Coche-" + (i + 1);
+            coches[i] = new Thread(() -> lavadero.lavarVehiculo(matricula));
+            coches[i].start();
+        }
+
+        // Esperar a que todos los vehículos terminen su ciclo
+        for (Thread coche : coches) {
+            try {
+                coche.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        System.out.println("\n✔ Jornada del lavadero completada. Todos los vehículos fueron atendidos correctamente.");
+    }
+}
+`;
+
+  function getDefaultPsproFiles() {
+    return {
+      'Ejercicio1.java': EJERCICIO_1_TEMPLATE,
+      'Ejercicio2.java': EJERCICIO_2_CODE,
+      'Ejercicio3.java': EJERCICIO_3_CODE
+    };
+  }
 
   const SNIPPETS = {
     psvm: {
@@ -86,11 +321,9 @@ public class Main {
   ];
 
   // --- Project State ---
-  let projectFiles = {
-    'Main.java': DEFAULT_MAIN_TEMPLATE
-  };
-  let activeFileName = 'Main.java';
-  let customMainTemplate = DEFAULT_MAIN_TEMPLATE;
+  let projectFiles = getDefaultPsproFiles();
+  let activeFileName = 'Ejercicio1.java';
+  let customMainTemplate = EJERCICIO_1_TEMPLATE;
 
   let editor = null;
   let activeMarkers = [];
@@ -972,6 +1205,17 @@ public class Main {
 
   function loadSavedData() {
     try {
+      const savedVersion = localStorage.getItem('java_pspro_v_key');
+      if (savedVersion !== PSPRO_INIT_KEY) {
+        // Inicialización garantizada con los 3 ejercicios de PSPRO
+        projectFiles = getDefaultPsproFiles();
+        activeFileName = 'Ejercicio1.java';
+        customMainTemplate = EJERCICIO_1_TEMPLATE;
+        saveDataLocally();
+        localStorage.setItem('java_pspro_v_key', PSPRO_INIT_KEY);
+        return;
+      }
+
       const savedTemplate = localStorage.getItem('java_offline_ide_template');
       if (savedTemplate && savedTemplate.trim()) {
         customMainTemplate = savedTemplate;
@@ -982,17 +1226,23 @@ public class Main {
         const parsed = JSON.parse(savedFilesJson);
         if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
           projectFiles = parsed;
+        } else {
+          projectFiles = getDefaultPsproFiles();
         }
+      } else {
+        projectFiles = getDefaultPsproFiles();
       }
 
       const savedActive = localStorage.getItem('java_offline_ide_active_file');
       if (savedActive && projectFiles[savedActive]) {
         activeFileName = savedActive;
       } else {
-        activeFileName = Object.keys(projectFiles)[0] || 'Main.java';
+        activeFileName = Object.keys(projectFiles).includes('Ejercicio1.java') ? 'Ejercicio1.java' : Object.keys(projectFiles)[0];
       }
     } catch (e) {
       console.warn('Error reading LocalStorage:', e);
+      projectFiles = getDefaultPsproFiles();
+      activeFileName = 'Ejercicio1.java';
     }
   }
 
@@ -1151,11 +1401,11 @@ public class Main {
     });
 
     dom.btnResetTemplateDefault.addEventListener('click', () => {
-      if (confirm('¿Restablecer la plantilla inicial a la original del sistema?')) {
-        customMainTemplate = DEFAULT_MAIN_TEMPLATE;
-        dom.textareaTemplate.value = DEFAULT_MAIN_TEMPLATE;
+      if (confirm('¿Restablecer la plantilla inicial a Ejercicio1 (PSPRO)?')) {
+        customMainTemplate = EJERCICIO_1_TEMPLATE;
+        dom.textareaTemplate.value = EJERCICIO_1_TEMPLATE;
         saveDataLocally();
-        showToast('Plantilla restablecida a la original');
+        showToast('Plantilla restablecida a Ejercicio1');
       }
     });
 
@@ -1172,19 +1422,17 @@ public class Main {
 
     // Reset project button
     dom.btnReset.addEventListener('click', () => {
-      if (confirm('¿Deseas reiniciar todo el proyecto y restaurar los archivos por defecto?')) {
-        projectFiles = {
-          'Main.java': customMainTemplate
-        };
-        activeFileName = 'Main.java';
+      if (confirm('¿Deseas reiniciar el proyecto con los 3 ejercicios de PSPRO por defecto?')) {
+        projectFiles = getDefaultPsproFiles();
+        activeFileName = 'Ejercicio1.java';
         isSwitchingFile = true;
-        editor.setValue(customMainTemplate);
+        editor.setValue(projectFiles[activeFileName]);
         isSwitchingFile = false;
         saveDataLocally();
         renderTabs();
         renderTree();
         validateSyntaxOffline();
-        showToast('Proyecto reiniciado con la plantilla');
+        showToast('Ejercicios de PSPRO restaurados');
       }
     });
 
