@@ -1,6 +1,7 @@
 /**
  * ============================================================================
  * IntelliJ IDEA Offline Java IDE - Logic & Assistant Engine
+ * Multi-file Project & Template Customization Edition
  * 100% Standalone / SEB (Safe Exam Browser) Compatible
  * ============================================================================
  */
@@ -8,14 +9,14 @@
 (function () {
   'use strict';
 
-  // --- Constants & Templates ---
-  const DEFAULT_CODE = `import java.util.Scanner;
+  // --- Initial Default Templates ---
+  const DEFAULT_MAIN_TEMPLATE = `import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
         // Bienvenido al editor offline estilo IntelliJ IDEA para Safe Exam Browser
         // Snippets disponibles: escribe 'sout' o 'psvm' y pulsa Tab
-        System.out.println("¡Hola desde el entorno offline de examen!");
+        System.out.println("¡Hola desde el entorno de examen!");
 
         Scanner scanner = new Scanner(System.in);
         // Escribe tu solución aquí...
@@ -26,11 +27,11 @@ public class Main {
   const SNIPPETS = {
     psvm: {
       template: 'public static void main(String[] args) {\n    \n}',
-      cursorOffset: 38 // Puts cursor inside the braces
+      cursorOffset: 38
     },
     sout: {
       template: 'System.out.println();',
-      cursorOffset: 19 // Puts cursor inside the parentheses
+      cursorOffset: 19
     },
     serr: {
       template: 'System.err.println();',
@@ -38,7 +39,7 @@ public class Main {
     },
     fori: {
       template: 'for (int i = 0; i < ; i++) {\n    \n}',
-      cursorOffset: 20 // Puts cursor after <
+      cursorOffset: 20
     },
     fore: {
       template: 'for (Object item : list) {\n    \n}',
@@ -84,21 +85,25 @@ public class Main {
     'indexOf()', 'split()', 'trim()', 'toLowerCase()', 'toUpperCase()'
   ];
 
-  // --- State ---
+  // --- Project State ---
+  let projectFiles = {
+    'Main.java': DEFAULT_MAIN_TEMPLATE
+  };
+  let activeFileName = 'Main.java';
+  let customMainTemplate = DEFAULT_MAIN_TEMPLATE;
+
   let editor = null;
-  let activeClassName = 'Main';
   let activeMarkers = [];
   let isBackendConnected = false;
-  let serverCheckTimer = null;
   let autosaveTimeout = null;
+  let isSwitchingFile = false;
 
   // --- DOM Elements ---
   const dom = {
     editorContainer: document.getElementById('code-editor'),
-    tabFilename: document.getElementById('tab-filename'),
-    treeFilename: document.getElementById('tree-filename'),
+    tabsList: document.getElementById('editor-tabs-list'),
+    treeFilesContainer: document.getElementById('tree-files-container'),
     breadcrumbFilename: document.getElementById('breadcrumb-filename'),
-    tabModifiedDot: document.getElementById('tab-modified-dot'),
     autosaveStatus: document.getElementById('autosave-status'),
     backendStatusBadge: document.getElementById('backend-status-badge'),
     statusbarMessage: document.getElementById('statusbar-message'),
@@ -116,24 +121,42 @@ public class Main {
     btnCompile: document.getElementById('btn-compile'),
     btnRun: document.getElementById('btn-run'),
     btnDownload: document.getElementById('btn-download'),
+    btnDownloadText: document.getElementById('btn-download-text'),
+    btnDownloadToggle: document.getElementById('btn-download-menu-toggle'),
+    downloadMenu: document.getElementById('download-menu'),
+    menuDownloadActive: document.getElementById('menu-download-active'),
+    menuDownloadAll: document.getElementById('menu-download-all'),
     btnFormat: document.getElementById('btn-format'),
-    btnNew: document.getElementById('btn-new'),
+    btnAddFileSidebar: document.getElementById('btn-add-file-sidebar'),
+    btnAddFileTab: document.getElementById('btn-add-file-tab'),
+    btnEditTemplate: document.getElementById('btn-edit-template'),
     btnReset: document.getElementById('btn-reset'),
     btnClearConsole: document.getElementById('btn-clear-console'),
     btnTogglePanel: document.getElementById('btn-toggle-panel'),
     btnFontDec: document.getElementById('btn-font-dec'),
     btnFontInc: document.getElementById('btn-font-inc'),
     sidebar: document.getElementById('project-sidebar'),
-    sidebarToggle: document.getElementById('btn-toggle-sidebar')
+    sidebarToggle: document.getElementById('btn-toggle-sidebar'),
+
+    // Modals
+    modalNewFile: document.getElementById('modal-new-file'),
+    inputNewFilename: document.getElementById('input-new-filename'),
+    btnConfirmNewFile: document.getElementById('btn-confirm-new-file'),
+
+    modalTemplate: document.getElementById('modal-template'),
+    textareaTemplate: document.getElementById('textarea-template'),
+    btnSaveTemplate: document.getElementById('btn-save-template'),
+    btnResetTemplateDefault: document.getElementById('btn-reset-template-default')
   };
 
   // --- Initialize Application ---
   function init() {
+    loadSavedData();
     initCodeMirror();
     bindEvents();
     checkLocalBackend();
-    loadSavedCode();
-    detectClassNameAndUpdateUI();
+    renderTabs();
+    renderTree();
     validateSyntaxOffline();
   }
 
@@ -149,7 +172,7 @@ public class Main {
 
       const list = [];
 
-      // 1. Snippets matching prefix
+      // 1. Snippets
       for (const [key, val] of Object.entries(SNIPPETS)) {
         if (!word || key.startsWith(word.toLowerCase())) {
           list.push({
@@ -162,7 +185,19 @@ public class Main {
         }
       }
 
-      // 2. Keywords
+      // 2. Classes in the current project
+      Object.keys(projectFiles).forEach(fname => {
+        const cName = fname.replace('.java', '');
+        if (!word || cName.toLowerCase().startsWith(word.toLowerCase())) {
+          list.push({
+            text: cName,
+            displayText: `${cName}  [project class]`,
+            className: 'hint-class'
+          });
+        }
+      });
+
+      // 3. Keywords
       JAVA_KEYWORDS.forEach(kw => {
         if (!word || kw.startsWith(word)) {
           list.push({
@@ -173,7 +208,7 @@ public class Main {
         }
       });
 
-      // 3. Common Java Types / Classes
+      // 4. Common Types
       JAVA_TYPES.forEach(tp => {
         if (!word || tp.toLowerCase().startsWith(word.toLowerCase())) {
           list.push({
@@ -184,7 +219,7 @@ public class Main {
         }
       });
 
-      // 4. Common methods & patterns
+      // 5. Common Methods
       JAVA_COMMON_METHODS.forEach(m => {
         if (!word || m.toLowerCase().includes(word.toLowerCase())) {
           list.push({
@@ -222,12 +257,13 @@ public class Main {
         }
       }
 
-      // Default: insert 4 spaces
       cm.replaceSelection('    ', 'end');
     }
 
+    const initialCode = projectFiles[activeFileName] || customMainTemplate;
+
     editor = CodeMirror(dom.editorContainer, {
-      value: DEFAULT_CODE,
+      value: initialCode,
       mode: 'text/x-java',
       theme: 'darcula',
       lineNumbers: true,
@@ -243,8 +279,8 @@ public class Main {
       extraKeys: {
         'Tab': handleTabKey,
         'Ctrl-Space': 'autocomplete',
-        'Ctrl-S': function () { downloadJavaFile(); },
-        'Cmd-S': function () { downloadJavaFile(); },
+        'Ctrl-S': function () { downloadActiveFile(); },
+        'Cmd-S': function () { downloadActiveFile(); },
         'Ctrl-Enter': function () { runOrCompile(); },
         'F9': function () { compileAndAnalyze(); },
         'Shift-F10': function () { runOrCompile(); },
@@ -255,12 +291,14 @@ public class Main {
 
     // Listen to editor changes
     editor.on('change', () => {
-      dom.tabModifiedDot.classList.add('visible');
+      if (isSwitchingFile) return;
+
+      projectFiles[activeFileName] = editor.getValue();
       dom.autosaveStatus.innerHTML = '✏️ Editando...';
 
       clearTimeout(autosaveTimeout);
       autosaveTimeout = setTimeout(() => {
-        saveCodeLocally();
+        saveDataLocally();
         detectClassNameAndUpdateUI();
         validateSyntaxOffline();
       }, 400);
@@ -273,6 +311,181 @@ public class Main {
     });
   }
 
+  // --- Multi-file Project Management ---
+  function switchToFile(filename) {
+    if (!projectFiles[filename]) return;
+
+    isSwitchingFile = true;
+    projectFiles[activeFileName] = editor.getValue();
+    activeFileName = filename;
+
+    editor.setValue(projectFiles[filename]);
+    isSwitchingFile = false;
+
+    dom.breadcrumbFilename.textContent = filename;
+    dom.btnDownloadText.textContent = `Descargar ${filename}`;
+
+    renderTabs();
+    renderTree();
+    validateSyntaxOffline();
+    editor.focus();
+  }
+
+  function addNewFile(className) {
+    className = className.trim();
+    if (!className) return;
+
+    // Normalizar nombre de archivo
+    if (!className.endsWith('.java')) {
+      className += '.java';
+    }
+
+    const bareName = className.replace('.java', '');
+    if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(bareName)) {
+      alert('Nombre de clase no válido para Java. Debe comenzar con letra o guión bajo.');
+      return;
+    }
+
+    if (projectFiles[className]) {
+      alert(`El archivo '${className}' ya existe en el proyecto.`);
+      switchToFile(className);
+      return;
+    }
+
+    // Boilerplate para clase Java secundaria
+    const newClassCode = `public class ${bareName} {
+    // Atributos
+    
+
+    // Constructor
+    public ${bareName}() {
+        
+    }
+
+    // Métodos
+    
+}
+`;
+
+    projectFiles[className] = newClassCode;
+    saveDataLocally();
+    switchToFile(className);
+    showToast(`Archivo '${className}' creado con éxito`);
+  }
+
+  function deleteFile(filename) {
+    const fileKeys = Object.keys(projectFiles);
+    if (fileKeys.length <= 1) {
+      alert('No puedes eliminar el único archivo restante del proyecto.');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de que deseas eliminar '${filename}'?`)) {
+      return;
+    }
+
+    delete projectFiles[filename];
+
+    if (activeFileName === filename) {
+      const remainingFiles = Object.keys(projectFiles);
+      activeFileName = remainingFiles.includes('Main.java') ? 'Main.java' : remainingFiles[0];
+      isSwitchingFile = true;
+      editor.setValue(projectFiles[activeFileName]);
+      isSwitchingFile = false;
+    }
+
+    saveDataLocally();
+    renderTabs();
+    renderTree();
+    validateSyntaxOffline();
+    showToast(`Archivo '${filename}' eliminado`, 'error');
+  }
+
+  function renderTabs() {
+    dom.tabsList.innerHTML = '';
+    const filenames = Object.keys(projectFiles);
+
+    filenames.forEach(filename => {
+      const tab = document.createElement('div');
+      tab.className = `editor-tab ${filename === activeFileName ? 'active' : ''}`;
+      tab.title = filename;
+
+      tab.innerHTML = `
+        <span>☕</span>
+        <span>${filename}</span>
+        ${filenames.length > 1 ? `<span class="tab-close" title="Cerrar archivo">&times;</span>` : ''}
+      `;
+
+      tab.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tab-close')) {
+          e.stopPropagation();
+          deleteFile(filename);
+          return;
+        }
+        if (filename !== activeFileName) {
+          switchToFile(filename);
+        }
+      });
+
+      dom.tabsList.appendChild(tab);
+    });
+
+    dom.breadcrumbFilename.textContent = activeFileName;
+    dom.btnDownloadText.textContent = `Descargar ${activeFileName}`;
+  }
+
+  function renderTree() {
+    dom.treeFilesContainer.innerHTML = '';
+    const filenames = Object.keys(projectFiles);
+
+    filenames.forEach(filename => {
+      const node = document.createElement('div');
+      node.className = `tree-node level-2 ${filename === activeFileName ? 'selected' : ''}`;
+
+      node.innerHTML = `
+        <div class="tree-node-content">
+          <span class="tree-icon">☕</span>
+          <span>${filename}</span>
+        </div>
+        ${filenames.length > 1 ? `<button class="tree-delete-btn" title="Eliminar archivo">&times;</button>` : ''}
+      `;
+
+      node.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tree-delete-btn')) {
+          e.stopPropagation();
+          deleteFile(filename);
+          return;
+        }
+        if (filename !== activeFileName) {
+          switchToFile(filename);
+        }
+      });
+
+      dom.treeFilesContainer.appendChild(node);
+    });
+  }
+
+  // --- Detect Class Name in Active File ---
+  function detectClassNameAndUpdateUI() {
+    const code = editor.getValue();
+    const match = code.match(/\bpublic\s+(?:final\s+|abstract\s+)?(?:class|interface|enum|record)\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
+
+    if (match) {
+      const declaredClassName = match[1];
+      const expectedFileName = `${declaredClassName}.java`;
+
+      // Si el nombre de la clase pública cambió respecto al nombre del archivo
+      if (expectedFileName !== activeFileName && !projectFiles[expectedFileName]) {
+        projectFiles[expectedFileName] = code;
+        delete projectFiles[activeFileName];
+        activeFileName = expectedFileName;
+        renderTabs();
+        renderTree();
+        saveDataLocally();
+      }
+    }
+  }
+
   // --- Snippet Expansion ---
   function expandSnippet(cm, cursor, word, snippetObj) {
     const from = CodeMirror.Pos(cursor.line, cursor.ch - word.length);
@@ -280,7 +493,6 @@ public class Main {
 
     cm.replaceRange(snippetObj.template, from, to);
 
-    // Compute new cursor position based on snippet template
     const lines = snippetObj.template.split('\n');
     let targetLine = from.line;
     let targetCh = from.ch;
@@ -288,7 +500,6 @@ public class Main {
     if (lines.length === 1) {
       targetCh = from.ch + snippetObj.cursorOffset;
     } else {
-      // Find indentation or line of offset
       let remaining = snippetObj.cursorOffset;
       for (let i = 0; i < lines.length; i++) {
         if (remaining <= lines[i].length) {
@@ -296,7 +507,7 @@ public class Main {
           targetCh = (i === 0 ? from.ch : 0) + remaining;
           break;
         }
-        remaining -= (lines[i].length + 1); // +1 for newline
+        remaining -= (lines[i].length + 1);
       }
     }
 
@@ -304,21 +515,7 @@ public class Main {
     showToast(`Snippet '${word}' expandido`);
   }
 
-  // --- Extract Public Class Name ---
-  function detectClassNameAndUpdateUI() {
-    const code = editor.getValue();
-    const match = code.match(/\bpublic\s+(?:final\s+|abstract\s+)?(?:class|interface|enum|record)\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
-
-    const newClassName = match ? match[1] : 'Main';
-    activeClassName = newClassName;
-
-    const fileDisplay = `${newClassName}.java`;
-    dom.tabFilename.textContent = fileDisplay;
-    dom.treeFilename.textContent = fileDisplay;
-    dom.breadcrumbFilename.textContent = fileDisplay;
-  }
-
-  // --- 100% Offline Client-Side Java Syntax Analyzer ---
+  // --- Offline Syntax Analyzer ---
   function validateSyntaxOffline() {
     clearLintMarkers();
 
@@ -326,7 +523,6 @@ public class Main {
     const lines = code.split('\n');
     const problems = [];
 
-    // 1. Check bracket balance & unclosed quotes with position tracking
     const bracketStack = [];
     let inBlockComment = false;
 
@@ -338,7 +534,6 @@ public class Main {
       let stringStartCol = 0;
 
       while (i < lineText.length) {
-        // Handle block comment end
         if (inBlockComment) {
           if (lineText.slice(i, i + 2) === '*/') {
             inBlockComment = false;
@@ -349,11 +544,8 @@ public class Main {
           continue;
         }
 
-        // Handle comment start
         if (!inString && !inChar) {
-          if (lineText.slice(i, i + 2) === '//') {
-            break; // Skip rest of line
-          }
+          if (lineText.slice(i, i + 2) === '//') break;
           if (lineText.slice(i, i + 2) === '/*') {
             inBlockComment = true;
             i += 2;
@@ -364,7 +556,6 @@ public class Main {
         const char = lineText[i];
         const prevChar = i > 0 ? lineText[i - 1] : '';
 
-        // Handle string literals
         if (char === '"' && prevChar !== '\\' && !inChar) {
           if (!inString) {
             inString = true;
@@ -376,20 +567,17 @@ public class Main {
           continue;
         }
 
-        // Handle char literals
         if (char === "'" && prevChar !== '\\' && !inString) {
           inChar = !inChar;
           i++;
           continue;
         }
 
-        // Inside literal strings or chars, skip syntax bracket tracking
         if (inString || inChar) {
           i++;
           continue;
         }
 
-        // Bracket matching
         if (char === '{' || char === '(' || char === '[') {
           bracketStack.push({ char, line: lineIndex, col: i });
         } else if (char === '}' || char === ')' || char === ']') {
@@ -398,7 +586,7 @@ public class Main {
               type: 'error',
               line: lineIndex,
               col: i,
-              message: `Carácter de cierre inesperado '${char}' sin apertura previa correspondiente.`
+              message: `Carácter de cierre inesperado '${char}' sin apertura previa.`
             });
           } else {
             const top = bracketStack.pop();
@@ -417,7 +605,6 @@ public class Main {
         i++;
       }
 
-      // Check unclosed string in line
       if (inString) {
         problems.push({
           type: 'error',
@@ -427,7 +614,6 @@ public class Main {
         });
       }
 
-      // Check missing semicolons for statements
       const trimmed = lineText.trim();
       if (
         trimmed &&
@@ -442,13 +628,11 @@ public class Main {
         !trimmed.endsWith(',') &&
         !trimmed.endsWith(':')
       ) {
-        // Exceptions: class/interface/method headers, control structures
         const isControlHeader = /^(if|else|for|while|do|switch|case|default|try|catch|finally)\b/.test(trimmed);
         const isClassOrMethod = /\b(class|interface|enum|record)\b/.test(trimmed) ||
                                 /\b(public|private|protected|static|void)\b.*\(.*\)$/.test(trimmed);
 
         if (!isControlHeader && !isClassOrMethod) {
-          // Check if next non-empty line starts with an operator continuation (like '+' or '.')
           let isContinuation = false;
           for (let next = lineIndex + 1; next < lines.length; next++) {
             const nextTrim = lines[next].trim();
@@ -471,7 +655,6 @@ public class Main {
         }
       }
 
-      // Check common typos: lowercase string / system
       if (/\bstring\s+[a-zA-Z_]/.test(lineText)) {
         problems.push({
           type: 'warning',
@@ -491,7 +674,6 @@ public class Main {
       }
     }
 
-    // Remaining unclosed brackets
     while (bracketStack.length > 0) {
       const unclosed = bracketStack.pop();
       problems.push({
@@ -502,8 +684,7 @@ public class Main {
       });
     }
 
-    // 2. Java Semantic rules checks
-    // Check multiple public classes
+    // Java Semantic checks
     const publicClassMatches = [...code.matchAll(/\bpublic\s+(?:final\s+|abstract\s+)?(?:class|interface|enum|record)\s+([A-Za-z0-9_$]+)/g)];
     if (publicClassMatches.length > 1) {
       publicClassMatches.slice(1).forEach(m => {
@@ -512,33 +693,11 @@ public class Main {
           type: 'error',
           line: lineNo,
           col: 0,
-          message: `Java solo permite una clase pública por fichero (se encontró '${m[1]}').`
+          message: `Java solo permite una clase pública por archivo (se encontró '${m[1]}').`
         });
       });
     }
 
-    // Check main method existence / signature
-    if (!code.includes('public static void main(String[] args)') &&
-        !code.includes('public static void main(String args[])') &&
-        !code.includes('public static void main(String... args)')) {
-      if (/public\s+void\s+main\s*\(/.test(code)) {
-        problems.push({
-          type: 'warning',
-          line: 0,
-          col: 0,
-          message: `El método main carece del modificador 'static'. Debe ser: 'public static void main(String[] args)'.`
-        });
-      } else if (/static\s+void\s+main\s*\(/.test(code) && !/public\s+static\s+void\s+main/.test(code)) {
-        problems.push({
-          type: 'warning',
-          line: 0,
-          col: 0,
-          message: `El método main debe ser 'public'.`
-        });
-      }
-    }
-
-    // Check missing imports for commonly used classes
     if (/\bScanner\b/.test(code) && !/import\s+java\.util\.(Scanner|\*);/.test(code)) {
       problems.push({
         type: 'warning',
@@ -547,20 +706,10 @@ public class Main {
         message: `Uso de 'Scanner' detectado sin 'import java.util.Scanner;' o 'import java.util.*;'.`
       });
     }
-    if (/\b(ArrayList|List)\b/.test(code) && !/import\s+java\.util\.(ArrayList|List|\*);/.test(code)) {
-      problems.push({
-        type: 'warning',
-        line: 0,
-        col: 0,
-        message: `Uso de colecciones sin importar 'java.util.List' o 'java.util.ArrayList'.`
-      });
-    }
 
-    // Render results in UI
     renderProblems(problems);
   }
 
-  // --- Render Problems & Gutter Markers ---
   function clearLintMarkers() {
     activeMarkers.forEach(m => m.clear());
     activeMarkers = [];
@@ -591,7 +740,6 @@ public class Main {
     dom.statusbarMessage.textContent = `⚠️ ${errorCount} error(es), ${warnCount} advertencia(s)`;
 
     problems.forEach(p => {
-      // 1. Mark line in CodeMirror
       const markerEl = document.createElement('div');
       markerEl.className = `cm-lint-gutter-marker ${p.type}`;
       markerEl.innerHTML = p.type === 'error' ? '●' : '▲';
@@ -606,14 +754,13 @@ public class Main {
       );
       activeMarkers.push(textMarker);
 
-      // 2. Add to Problems panel list
       const item = document.createElement('div');
       item.className = `problem-item ${p.type}`;
       item.innerHTML = `
         <span class="problem-icon">${p.type === 'error' ? '❌' : '⚠️'}</span>
         <div class="problem-content">
           <div class="problem-title">${escapeHtml(p.message)}</div>
-          <div class="problem-location">${activeClassName}.java : Línea ${p.line + 1}, Columna ${p.col + 1}</div>
+          <div class="problem-location">${activeFileName} : Línea ${p.line + 1}, Columna ${p.col + 1}</div>
         </div>
       `;
 
@@ -641,19 +788,9 @@ public class Main {
         return;
       }
 
-      // Check if line closes braces at the start
-      let leadingCloses = 0;
-      let i = 0;
-      while (i < trimmed.length && (trimmed[i] === '}' || trimmed[i] === ')')) {
-        leadingCloses++;
-        i++;
-      }
-
       const effectiveIndent = Math.max(0, indentLevel - (trimmed.startsWith('}') || trimmed.startsWith(')') ? 1 : 0));
       formattedLines.push('    '.repeat(effectiveIndent) + trimmed);
 
-      // Adjust indentation for future lines
-      // Count open vs close braces outside strings/comments
       let opens = 0;
       let closes = 0;
       let inString = false;
@@ -675,24 +812,26 @@ public class Main {
 
   // --- Compile & Analyze Action ---
   async function compileAndAnalyze() {
+    projectFiles[activeFileName] = editor.getValue();
+    saveDataLocally();
     switchBottomTab('problems');
     validateSyntaxOffline();
 
     if (isBackendConnected) {
-      appendConsole('Compilando con JDK local (javac)...', 'system');
+      appendConsole(`Compilando proyecto (${Object.keys(projectFiles).length} archivos) con JDK local...`, 'system');
       try {
         const resp = await fetch('/api/compile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            className: activeClassName,
-            code: editor.getValue()
+            className: activeFileName.replace('.java', ''),
+            files: projectFiles
           })
         });
 
         const data = await resp.json();
         if (data.success) {
-          appendConsole(`✔ Compilación exitosa: ${activeClassName}.class generado.`, 'success');
+          appendConsole(`✔ Compilación exitosa: Todos los archivos compilados correctamente.`, 'success');
           showToast('Compilación exitosa con javac');
         } else {
           appendConsole(`❌ Errores detectados por javac:\n${data.output}`, 'stderr');
@@ -702,37 +841,36 @@ public class Main {
         appendConsole(`Error de conexión con el micro-servidor: ${err.message}`, 'stderr');
       }
     } else {
-      appendConsole(`[Modo Offline] Análisis sintáctico completado para ${activeClassName}.java.`, 'system');
-      appendConsole(`No se detectaron errores críticos en el navegador.`, 'stdout');
+      appendConsole(`[Modo Offline] Análisis sintáctico completado para ${activeFileName}.`, 'system');
+      appendConsole(`Proyecto con ${Object.keys(projectFiles).length} archivo(s) listo(s) en memoria.`, 'stdout');
       showToast('Análisis sintáctico completado');
     }
   }
 
-  // --- Run / Execute Action ---
+  // --- Run Action ---
   async function runOrCompile() {
+    projectFiles[activeFileName] = editor.getValue();
+    saveDataLocally();
     validateSyntaxOffline();
 
     if (isBackendConnected) {
       switchBottomTab('output');
-      appendConsole(`--- Ejecutando ${activeClassName} con JDK real ---`, 'system');
+      appendConsole(`--- Ejecutando proyecto con JDK real (${Object.keys(projectFiles).length} archivos) ---`, 'system');
 
       try {
         const resp = await fetch('/api/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            className: activeClassName,
-            code: editor.getValue()
+            className: activeFileName.replace('.java', ''),
+            files: projectFiles
           })
         });
 
         const data = await resp.json();
-        if (data.stdout) {
-          appendConsole(data.stdout, 'stdout');
-        }
-        if (data.stderr) {
-          appendConsole(data.stderr, 'stderr');
-        }
+        if (data.stdout) appendConsole(data.stdout, 'stdout');
+        if (data.stderr) appendConsole(data.stderr, 'stderr');
+
         if (data.success) {
           appendConsole(`\nProcess finished with exit code ${data.exitCode || 0}`, 'success');
         } else {
@@ -742,63 +880,141 @@ public class Main {
         appendConsole(`Error ejecutando proceso Java: ${err.message}`, 'stderr');
       }
     } else {
-      // 100% Offline browser fallback
       switchBottomTab('output');
       appendConsole(`=== MODO AUTÓNOMO Y OFFLINE (SEB) ===`, 'system');
-      appendConsole(`El código se encuentra validado y listo en el navegador.`, 'stdout');
-      appendConsole(`\n💡 Nota para el examen:`, 'system');
-      appendConsole(`Para compilar y ejecutar directamente contra el JDK real de la máquina, inicia el micro-servidor ejecutando en la terminal:`, 'stdout');
-      appendConsole(`   python3 server.py`, 'success');
-      appendConsole(`Si estás dentro de Safe Exam Browser sin red ni localhost, utiliza el botón "Descargar .java" para entregar tu examen.`, 'stdout');
+      appendConsole(`Archivos activos en el proyecto: ${Object.keys(projectFiles).join(', ')}`, 'stdout');
+      appendConsole(`\nPara compilar y ejecutar directamente con javac/java real:`, 'system');
+      appendConsole(`   python3 server.py  (o ./start_mac.sh en Mac)`, 'success');
+      appendConsole(`Usa el menú "Descargar" para guardar tus archivos .java o descargar el proyecto en ZIP.`, 'stdout');
     }
   }
 
-  // --- Download .java File ---
-  function downloadJavaFile() {
-    detectClassNameAndUpdateUI();
-    const fileName = `${activeClassName}.java`;
-    const code = editor.getValue();
+  // --- Downloads (Single & ZIP) ---
+  function downloadActiveFile() {
+    projectFiles[activeFileName] = editor.getValue();
+    const code = projectFiles[activeFileName];
 
     const blob = new Blob([code], { type: 'text/x-java;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = fileName;
+    link.download = activeFileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    dom.tabModifiedDot.classList.remove('visible');
-    dom.autosaveStatus.innerHTML = `💾 Descargado como <b>${fileName}</b>`;
-    dom.statusbarMessage.textContent = `Archivo ${fileName} descargado con éxito`;
-    showToast(`Archivo ${fileName} descargado`);
+    dom.statusbarMessage.textContent = `Descargado: ${activeFileName}`;
+    showToast(`Archivo '${activeFileName}' descargado`);
   }
 
-  // --- Local Storage Persistence ---
-  function saveCodeLocally() {
+  async function downloadAllFilesZip() {
+    projectFiles[activeFileName] = editor.getValue();
+    saveDataLocally();
+
+    // 1. Si el backend está disponible, solicitar ZIP generado por el servidor
+    if (isBackendConnected) {
+      try {
+        const resp = await fetch('/api/zip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: projectFiles })
+        });
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'Proyecto_Java.zip';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          showToast('Proyecto descargado como ZIP');
+          return;
+        }
+      } catch (e) {
+        // Fallback a descarga individual en navegador
+      }
+    }
+
+    // 2. Fallback 100% offline en cliente: descargar cada archivo .java individualmente
+    const keys = Object.keys(projectFiles);
+    keys.forEach((fname, index) => {
+      setTimeout(() => {
+        const blob = new Blob([projectFiles[fname]], { type: 'text/x-java;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fname;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, index * 200);
+    });
+
+    showToast(`Descargando ${keys.length} archivo(s) .java`);
+  }
+
+  // --- Persistence in LocalStorage ---
+  function saveDataLocally() {
     try {
-      localStorage.setItem('java_offline_ide_code', editor.getValue());
-      localStorage.setItem('java_offline_ide_classname', activeClassName);
+      projectFiles[activeFileName] = editor.getValue();
+      localStorage.setItem('java_offline_ide_files', JSON.stringify(projectFiles));
+      localStorage.setItem('java_offline_ide_active_file', activeFileName);
+      localStorage.setItem('java_offline_ide_template', customMainTemplate);
       dom.autosaveStatus.innerHTML = '💾 Guardado localmente';
     } catch (e) {
       console.warn('LocalStorage error:', e);
     }
   }
 
-  function loadSavedCode() {
+  function loadSavedData() {
     try {
-      const saved = localStorage.getItem('java_offline_ide_code');
-      if (saved && saved.trim()) {
-        editor.setValue(saved);
-        dom.tabModifiedDot.classList.remove('visible');
+      const savedTemplate = localStorage.getItem('java_offline_ide_template');
+      if (savedTemplate && savedTemplate.trim()) {
+        customMainTemplate = savedTemplate;
+      }
+
+      const savedFilesJson = localStorage.getItem('java_offline_ide_files');
+      if (savedFilesJson) {
+        const parsed = JSON.parse(savedFilesJson);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+          projectFiles = parsed;
+        }
+      }
+
+      const savedActive = localStorage.getItem('java_offline_ide_active_file');
+      if (savedActive && projectFiles[savedActive]) {
+        activeFileName = savedActive;
+      } else {
+        activeFileName = Object.keys(projectFiles)[0] || 'Main.java';
       }
     } catch (e) {
       console.warn('Error reading LocalStorage:', e);
     }
   }
 
-  // --- Terminal Output Helpers ---
+  // --- Modals Logic ---
+  function openNewFileModal() {
+    dom.inputNewFilename.value = '';
+    dom.modalNewFile.classList.add('open');
+    setTimeout(() => dom.inputNewFilename.focus(), 50);
+  }
+
+  function openTemplateModal() {
+    dom.textareaTemplate.value = customMainTemplate;
+    dom.modalTemplate.classList.add('open');
+    setTimeout(() => dom.textareaTemplate.focus(), 50);
+  }
+
+  function closeModals() {
+    dom.modalNewFile.classList.remove('open');
+    dom.modalTemplate.classList.remove('open');
+  }
+
+  // --- Terminal Helpers ---
   function appendConsole(text, type = 'stdout') {
     const span = document.createElement('span');
     span.className = `out-${type}`;
@@ -811,7 +1027,6 @@ public class Main {
     dom.consoleOutput.innerHTML = '';
   }
 
-  // --- UI Helpers & Tab Switching ---
   function switchBottomTab(tabId) {
     dom.panelTabs.forEach(t => {
       t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
@@ -846,9 +1061,8 @@ public class Main {
       .replace(/"/g, '&quot;');
   }
 
-  // --- Local Backend (Optional server.py detection) ---
+  // --- Check Backend Status ---
   async function checkLocalBackend() {
-    // Only check if opened via http:// or https:// (not file://)
     if (window.location.protocol.startsWith('http')) {
       try {
         const resp = await fetch('/api/status', { method: 'GET' });
@@ -858,7 +1072,7 @@ public class Main {
             isBackendConnected = true;
             dom.backendStatusBadge.className = 'status-badge badge-online';
             dom.backendStatusBadge.textContent = `🟢 Localhost JDK (${data.version || 'Java'})`;
-            dom.btnRun.title = 'Ejecutar programa con JDK real (Shift+F10)';
+            dom.btnRun.title = 'Ejecutar proyecto con JDK real (Shift+F10)';
             return;
           }
         }
@@ -874,57 +1088,128 @@ public class Main {
 
   // --- Event Bindings ---
   function bindEvents() {
-    // Top Action Buttons
     dom.btnCompile.addEventListener('click', compileAndAnalyze);
     dom.btnRun.addEventListener('click', runOrCompile);
-    dom.btnDownload.addEventListener('click', downloadJavaFile);
     dom.btnFormat.addEventListener('click', formatCode);
 
-    // New / Reset Buttons
-    dom.btnNew.addEventListener('click', () => {
-      if (confirm('¿Deseas iniciar una nueva plantilla limpia?')) {
-        editor.setValue(DEFAULT_CODE);
-        detectClassNameAndUpdateUI();
-        validateSyntaxOffline();
-        showToast('Plantilla reiniciada');
+    // Download button & split menu
+    dom.btnDownload.addEventListener('click', downloadActiveFile);
+    dom.btnDownloadToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dom.downloadMenu.classList.toggle('open');
+    });
+
+    dom.menuDownloadActive.addEventListener('click', () => {
+      dom.downloadMenu.classList.remove('open');
+      downloadActiveFile();
+    });
+
+    dom.menuDownloadAll.addEventListener('click', () => {
+      dom.downloadMenu.classList.remove('open');
+      downloadAllFilesZip();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dom.downloadMenu.contains(e.target) && e.target !== dom.btnDownloadToggle) {
+        dom.downloadMenu.classList.remove('open');
       }
     });
 
-    dom.btnReset.addEventListener('click', () => {
-      editor.setValue(DEFAULT_CODE);
-      detectClassNameAndUpdateUI();
-      validateSyntaxOffline();
+    // Add new file triggers
+    dom.btnAddFileSidebar.addEventListener('click', openNewFileModal);
+    dom.btnAddFileTab.addEventListener('click', openNewFileModal);
+
+    dom.btnConfirmNewFile.addEventListener('click', () => {
+      const name = dom.inputNewFilename.value.trim();
+      if (name) {
+        closeModals();
+        addNewFile(name);
+      }
     });
 
-    // Panel Tabs Switching
+    dom.inputNewFilename.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const name = dom.inputNewFilename.value.trim();
+        if (name) {
+          closeModals();
+          addNewFile(name);
+        }
+      }
+    });
+
+    // Template Modal triggers
+    dom.btnEditTemplate.addEventListener('click', openTemplateModal);
+
+    dom.btnSaveTemplate.addEventListener('click', () => {
+      const val = dom.textareaTemplate.value.trim();
+      if (val) {
+        customMainTemplate = dom.textareaTemplate.value;
+        saveDataLocally();
+        closeModals();
+        showToast('Plantilla guardada en el navegador');
+      }
+    });
+
+    dom.btnResetTemplateDefault.addEventListener('click', () => {
+      if (confirm('¿Restablecer la plantilla inicial a la original del sistema?')) {
+        customMainTemplate = DEFAULT_MAIN_TEMPLATE;
+        dom.textareaTemplate.value = DEFAULT_MAIN_TEMPLATE;
+        saveDataLocally();
+        showToast('Plantilla restablecida a la original');
+      }
+    });
+
+    // Close modals
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', closeModals);
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModals();
+      });
+    });
+
+    // Reset project button
+    dom.btnReset.addEventListener('click', () => {
+      if (confirm('¿Deseas reiniciar todo el proyecto y restaurar los archivos por defecto?')) {
+        projectFiles = {
+          'Main.java': customMainTemplate
+        };
+        activeFileName = 'Main.java';
+        isSwitchingFile = true;
+        editor.setValue(customMainTemplate);
+        isSwitchingFile = false;
+        saveDataLocally();
+        renderTabs();
+        renderTree();
+        validateSyntaxOffline();
+        showToast('Proyecto reiniciado con la plantilla');
+      }
+    });
+
+    // Bottom Panel Tabs
     dom.panelTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         switchBottomTab(tab.getAttribute('data-tab'));
       });
     });
 
-    // Clear Console
     dom.btnClearConsole.addEventListener('click', clearConsole);
 
-    // Toggle Bottom Panel
     let isPanelMinimized = false;
     dom.btnTogglePanel.addEventListener('click', () => {
       isPanelMinimized = !isPanelMinimized;
-      if (isPanelMinimized) {
-        dom.bottomPanel.style.height = '32px';
-      } else {
-        dom.bottomPanel.style.height = '220px';
-      }
+      dom.bottomPanel.style.height = isPanelMinimized ? '32px' : '220px';
       editor.refresh();
     });
 
-    // Sidebar Toggle
     dom.sidebarToggle.addEventListener('click', () => {
       dom.sidebar.classList.toggle('collapsed');
       setTimeout(() => editor.refresh(), 210);
     });
 
-    // Font size controls
+    // Font size
     let currentFontSize = 14;
     dom.btnFontInc.addEventListener('click', () => {
       if (currentFontSize < 24) {
@@ -942,7 +1227,7 @@ public class Main {
       }
     });
 
-    // Panel Resizer Drag
+    // Resizer Drag
     let isResizing = false;
     let startY, startHeight;
 
@@ -971,7 +1256,6 @@ public class Main {
     });
   }
 
-  // Initialize on DOM Ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

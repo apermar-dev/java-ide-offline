@@ -18,7 +18,17 @@ Un entorno de desarrollo Java local, ligero y con estética **IntelliJ IDEA (Dar
    - Sangría automática de 4 espacios (tabulación estándar de Java).
    - Atajo de formateo de código: <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>L</kbd>.
 
-3. **Snippets Esenciales de IntelliJ:**
+3. **Soporte Multi-Archivo (Proyectos con Varias Clases):**
+   - Permite crear y gestionar múltiples ficheros `.java` en el mismo proyecto (`Main.java`, `Persona.java`, `Calculadora.java`, etc.).
+   - Pestañas dinámicas en el editor y árbol de archivos sincronizado en el panel lateral `src/`.
+   - Compilación conjunta: `javac` compila todos los ficheros `.java` simultáneamente, permitiendo instanciar y comunicar clases entre sí.
+   - Detección automática de la clase con `public static void main` para la ejecución.
+
+4. **Gestión y Edición de Plantillas:**
+   - Botón **"⚙️ Plantilla"** en la barra de pestañas: permite ver, personalizar y guardar en el navegador el código base que se generará en nuevos exámenes o al pulsar "Restablecer".
+   - Generación automática de plantillas limpias al crear nuevas clases secundarias.
+
+5. **Snippets Esenciales de IntelliJ:**
    - `psvm` + <kbd>Tab</kbd> → Expande automáticamente a `public static void main(String[] args) { ... }`.
    - `sout` + <kbd>Tab</kbd> → Expande a `System.out.println();` con el cursor dentro de los paréntesis.
    - `serr` + <kbd>Tab</kbd> → Expande a `System.err.println();`.

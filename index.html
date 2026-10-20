@@ -52,28 +52,42 @@
       </div>
 
       <div class="header-right">
-        <button id="btn-compile" class="btn btn-compile" title="Analizar y verificar sintaxis Java (F9)">
+        <button id="btn-compile" class="btn btn-compile" title="Analizar y verificar sintaxis de todo el proyecto (F9)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
           </svg>
           <span>Compilar / Analizar</span>
         </button>
 
-        <button id="btn-run" class="btn btn-run" title="Ejecutar código (Shift+F10)">
+        <button id="btn-run" class="btn btn-run" title="Ejecutar proyecto Java (Shift+F10)">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
           <span>Ejecutar</span>
         </button>
 
-        <button id="btn-download" class="btn btn-download" title="Descargar archivo .java con nombre de clase (Ctrl+S)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          <span>Descargar .java</span>
-        </button>
+        <!-- Download split button with dropdown -->
+        <div class="download-group">
+          <button id="btn-download" class="btn btn-download" title="Descargar archivo .java activo (Ctrl+S)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span id="btn-download-text">Descargar .java</span>
+          </button>
+          <button id="btn-download-menu-toggle" class="btn-download-split" title="Opciones de descarga">▾</button>
+          <div id="download-menu" class="download-menu">
+            <button id="menu-download-active" class="download-menu-item">
+              <span>☕</span>
+              <span>Descargar archivo activo (.java)</span>
+            </button>
+            <button id="menu-download-all" class="download-menu-item">
+              <span>📦</span>
+              <span>Descargar todo el proyecto (.zip)</span>
+            </button>
+          </div>
+        </div>
 
         <button id="btn-format" class="btn btn-secondary btn-icon-only" title="Formatear código y sangría (Ctrl+Alt+L)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -95,41 +109,43 @@
       <aside id="project-sidebar" class="ide-sidebar">
         <div class="sidebar-header">
           <span>Project</span>
-          <button id="btn-toggle-sidebar" class="sidebar-toggle-btn" title="Ocultar / Mostrar árbol de proyecto">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
+          <div class="sidebar-header-actions">
+            <button id="btn-add-file-sidebar" class="sidebar-header-btn" title="Añadir nuevo archivo .java">+ Archivo</button>
+            <button id="btn-toggle-sidebar" class="sidebar-toggle-btn" title="Ocultar / Mostrar árbol">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="project-tree">
-          <div class="tree-node selected">
-            <span class="tree-icon">📦</span>
-            <span>ExamProject</span>
+          <div class="tree-node">
+            <div class="tree-node-content">
+              <span class="tree-icon">📦</span>
+              <span>ExamProject</span>
+            </div>
           </div>
           <div class="tree-node level-1">
-            <span class="tree-icon">📂</span>
-            <span>src</span>
+            <div class="tree-node-content">
+              <span class="tree-icon">📂</span>
+              <span>src</span>
+            </div>
           </div>
-          <div class="tree-node level-2 selected">
-            <span class="tree-icon">☕</span>
-            <span id="tree-filename">Main.java</span>
-          </div>
+          <!-- Dynamic File List in Tree -->
+          <div id="tree-files-container"></div>
         </div>
       </aside>
 
       <!-- Center Editor & Bottom Panels Area -->
       <section class="ide-editor-area">
-        <!-- Editor Tabs Bar -->
+        <!-- Editor Tabs Bar (Multi-file tabs) -->
         <div class="editor-tabs-bar">
-          <div class="tabs-list">
-            <div class="editor-tab active">
-              <span>☕</span>
-              <span id="tab-filename">Main.java</span>
-              <span id="tab-modified-dot" class="tab-modified-dot"></span>
-            </div>
+          <div class="tabs-list" id="editor-tabs-list">
+            <!-- Dynamically generated file tabs -->
           </div>
           <div class="tabs-actions">
-            <button id="btn-new" class="tab-action-btn" title="Reiniciar con una plantilla limpia">+ Nueva Plantilla</button>
+            <button id="btn-add-file-tab" class="tab-action-btn" title="Crear nueva clase Java">+ Clase</button>
+            <button id="btn-edit-template" class="tab-action-btn" title="Ver o modificar la plantilla predeterminada">⚙️ Plantilla</button>
             <button id="btn-reset" class="tab-action-btn" title="Restaurar código por defecto">Restablecer</button>
           </div>
         </div>
@@ -179,7 +195,7 @@
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                   <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
-                <div>No se han detectado errores sintácticos. El código parece válido.</div>
+                <div>No se han detectado errores sintácticos en el archivo activo.</div>
               </div>
               <div id="problems-list" class="problems-list"></div>
             </div>
@@ -272,6 +288,45 @@ Pulsa "Descargar .java" (Ctrl+S) para guardar tu fichero listo para entrega.</sp
         <div class="statusbar-item">Java SE 17+ (SEB Offline)</div>
       </div>
     </footer>
+  </div>
+
+  <!-- Modal: Crear Nuevo Archivo Java -->
+  <div id="modal-new-file" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>Nuevo Archivo Java (.java)</span>
+        <button class="modal-close-btn" data-close="modal-new-file">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label for="input-new-filename">Nombre de la clase o interfaz:</label>
+        <input type="text" id="input-new-filename" class="modal-input" placeholder="Ej: Persona, Calculadora, GestorDatos" autocomplete="off" />
+        <span class="modal-desc">El archivo se guardará dentro de <code>src/</code> y se compilará conjuntamente con el resto de clases del proyecto.</span>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close="modal-new-file">Cancelar</button>
+        <button id="btn-confirm-new-file" class="btn btn-run">Crear Clase</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Plantilla Predeterminada -->
+  <div id="modal-template" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>Configuración de Plantilla Inicial</span>
+        <button class="modal-close-btn" data-close="modal-template">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label for="textarea-template">Plantilla de código inicial para nuevos exámenes / proyectos:</label>
+        <textarea id="textarea-template" class="modal-textarea" spellcheck="false"></textarea>
+        <span class="modal-desc">Esta plantilla se almacena en el navegador y se cargará siempre al iniciar un nuevo proyecto o al pulsar "Restablecer".</span>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-reset-template-default" class="btn btn-secondary">Restablecer Original</button>
+        <button class="btn btn-secondary" data-close="modal-template">Cancelar</button>
+        <button id="btn-save-template" class="btn btn-run">Guardar Plantilla</button>
+      </div>
+    </div>
   </div>
 
   <!-- Local CodeMirror Libraries (100% Offline) -->
